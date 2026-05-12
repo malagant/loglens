@@ -22,11 +22,24 @@ jobs:
           go-version-file: go.mod
           cache: true
       - uses: sigstore/cosign-installer@v3
+      # Skip cosign signing until a cosign keypair is provisioned in the repo
+      # secrets (COSIGN_PRIVATE_KEY, COSIGN_PASSWORD). Tracked in a follow-up
+      # issue; until then we still publish archives + sha256 checksums.
+      - name: Determine GoReleaser args
+        id: rel
+        env:
+          HAS_COSIGN: ${{ secrets.COSIGN_PRIVATE_KEY != '' }}
+        run: |
+          if [ "$HAS_COSIGN" = "true" ]; then
+            echo "args=release --clean" >> "$GITHUB_OUTPUT"
+          else
+            echo "args=release --clean --skip=sign" >> "$GITHUB_OUTPUT"
+          fi
       - name: GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
           version: "~> v2"
-          args: release --clean
+          args: ${{ steps.rel.outputs.args }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}

@@ -7,7 +7,6 @@ import (
 	"io"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -27,9 +26,6 @@ func TestTUIBootsInPTY(t *testing.T) {
 
 	binDir := t.TempDir()
 	bin := filepath.Join(binDir, "loglens")
-	if runtime.GOOS == "windows" {
-		bin += ".exe"
-	}
 
 	build := exec.Command("go", "build", "-o", bin, "../../cmd/loglens")
 	build.Env = append(build.Environ(), "CGO_ENABLED=0")
