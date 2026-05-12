@@ -1,0 +1,100 @@
+version: 2
+
+project_name: loglens
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: loglens
+    main: ./cmd/loglens
+    binary: loglens
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X github.com/loglens/loglens/internal/tui.Version={{ .Version }}
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+
+archives:
+  - id: loglens
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files:
+      - LICENSE
+      - README.md
+      - CONTRIBUTING.md
+
+checksum:
+  name_template: "{{ .ProjectName }}_{{ .Version }}_checksums.txt"
+  algorithm: sha256
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-snapshot"
+
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - "^docs:"
+      - "^chore:"
+      - "^test:"
+      - "Merge pull request"
+      - "Merge branch"
+
+signs:
+  - id: cosign-checksums
+    cmd: cosign
+    artifacts: checksum
+    signature: "${artifact}.sig"
+    certificate: "${artifact}.pem"
+    args:
+      - sign-blob
+      - "--key=env://COSIGN_PRIVATE_KEY"
+      - "--output-signature=${signature}"
+      - "--output-certificate=${certificate}"
+      - "${artifact}"
+      - "--yes"
+    env:
+      - COSIGN_PASSWORD={{ .Env.COSIGN_PASSWORD }}
+
+brews:
+  - name: loglens
+    repository:
+      owner: loglens
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    homepage: "https://github.com/loglens/loglens"
+    description: "One TUI, every log source, one query language."
+    license: MIT
+    install: |
+      bin.install "loglens"
+    test: |
+      assert_match version.to_s, shell_output("#{bin}/loglens --version")
+    skip_upload: auto
+
+scoops:
+  - repository:
+      owner: loglens
+      name: scoop-bucket
+      token: "{{ .Env.SCOOP_BUCKET_GITHUB_TOKEN }}"
+    homepage: "https://github.com/loglens/loglens"
+    description: "One TUI, every log source, one query language."
+    license: MIT
+    skip_upload: auto
+
+release:
+  draft: false
+  prerelease: auto
+  github:
+    owner: loglens
+    name: loglens

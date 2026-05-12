@@ -1,0 +1,59 @@
+name: Bug report
+description: A reproducible defect in LogLens.
+title: "[bug] "
+labels: ["type/bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. Please fill in everything you can — it dramatically shortens our time-to-fix.
+  - type: input
+    id: version
+    attributes:
+      label: LogLens version
+      description: "Output of `loglens --version`"
+      placeholder: "v0.0.1-alpha"
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - macOS
+        - Linux
+        - Windows
+        - Other (specify in description)
+    validations:
+      required: true
+  - type: input
+    id: terminal
+    attributes:
+      label: Terminal emulator
+      placeholder: "iTerm2, WezTerm, Windows Terminal, kitty, etc."
+    validations:
+      required: false
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Minimal commands or keystrokes.
+      placeholder: |
+        1. Run `loglens k8s -n default`
+        2. Press `/`
+        3. Type `level:error`
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+      description: Include stderr output or a screenshot/asciinema if helpful.
+    validations:
+      required: true

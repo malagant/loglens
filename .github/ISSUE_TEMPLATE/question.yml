@@ -1,0 +1,19 @@
+name: Question
+description: A "how do I…" or design clarification.
+title: "[q] "
+labels: ["type/question"]
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question
+      description: One paragraph is fine. Link to docs you have already read.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: What are you trying to accomplish?
+    validations:
+      required: false

@@ -1,0 +1,54 @@
+# Label taxonomy applied via tooling such as github/labeler-action or
+# crazy-max/ghaction-github-labeler. Keep this list authoritative for the
+# project and sync it after editing.
+
+# type/* — what kind of work this is
+- name: type/bug
+  description: A defect or regression
+  color: d73a4a
+- name: type/feature
+  description: A new capability
+  color: 0e8a16
+- name: type/question
+  description: A question or design clarification
+  color: cc317c
+- name: type/chore
+  description: Build, release, or housekeeping work
+  color: c5def5
+- name: type/docs
+  description: Documentation only
+  color: 0075ca
+
+# area/* — surface within the product
+- name: area/k8s
+  description: Kubernetes log adapter
+  color: 1d76db
+- name: area/file
+  description: Local file adapter
+  color: 1d76db
+- name: area/journald
+  description: journald adapter
+  color: 1d76db
+- name: area/docker
+  description: Docker adapter
+  color: 1d76db
+- name: area/filter-dsl
+  description: Filter / query DSL
+  color: 5319e7
+- name: area/ui
+  description: TUI rendering, keymaps, theming
+  color: fbca04
+- name: area/release
+  description: Build, CI, release pipeline
+  color: ededed
+- name: area/docs
+  description: README, CONTRIBUTING, examples
+  color: ededed
+
+# triage helpers
+- name: good-first-issue
+  description: Approachable for a first-time contributor
+  color: 7057ff
+- name: help-wanted
+  description: Help from the community welcomed
+  color: 008672
