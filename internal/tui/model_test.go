@@ -176,3 +176,20 @@ func TestNegationAndSubstring(t *testing.T) {
 }
 
 func slash() tea.KeyMsg { return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'/'}} }
+
+func TestHelpQuitKey(t *testing.T) {
+	m := New()
+	m2, _ := m.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
+	m = m2.(Model)
+	// Open help
+	m3, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}})
+	m = m3.(Model)
+	if !m.help.IsOpen() {
+		t.Fatal("expected help to be open after ?")
+	}
+	// Send q while help open
+	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
+	if cmd == nil {
+		t.Fatal("expected tea.Quit command after q in help mode, got nil")
+	}
+}

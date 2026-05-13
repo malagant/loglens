@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-	"time"
 	"unicode"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -602,22 +601,14 @@ func (m Model) viewStream(layout Layout) string {
 }
 
 func (m Model) viewDetail(layout Layout) string {
-	title := style.PaneTitle.Render("Detail")
-	var bodyLines []string
-	if m.cursor < 0 || m.cursor >= len(m.events) {
-		bodyLines = []string{style.Dim.Render("(select a row with j/k, enter toggles pane)")}
+	title := style.PaneTitle.Render("Detail  " + style.Dim.Render("l/h:expand  y:copy  esc:close"))
+	var body string
+	if !m.detailOpen || m.detail.Root == nil {
+		body = style.Dim.Render("(press enter on a row to inspect)")
 	} else {
-		ev := m.events[m.cursor]
-		bodyLines = []string{
-			fmt.Sprintf("%s %s", style.KeyHint.Render("time"), style.KeyDesc.Render(ev.Timestamp.Format(time.RFC3339Nano))),
-			fmt.Sprintf("%s %s", style.KeyHint.Render("src "), style.KeyDesc.Render(ev.Source)),
-			fmt.Sprintf("%s %s", style.KeyHint.Render("lvl "),
-				lipgloss.NewStyle().Foreground(style.LevelColor(string(ev.Level))).Render(levelLabel(ev.Level))),
-			"",
-			ev.Raw,
-		}
+		body = m.detail.View()
 	}
-	content := lipgloss.JoinVertical(lipgloss.Left, title, strings.Join(bodyLines, "\n"))
+	content := lipgloss.JoinVertical(lipgloss.Left, title, body)
 	w, h := layout.DetailW-2, layout.DetailH-2
 	if w < 1 {
 		w = 1
@@ -673,7 +664,17 @@ func (m Model) streamRows(visible []event.Event, width, height int, reqID string
 	}
 	out := make([]string, 0, end-start)
 	for i := start; i < end; i++ {
-		row := formatRow(visible[i], width)
+		ev := visible[i]
+		accent := "  "
+		accentW := 2
+		if reqID != "" && m.detector.ID(ev) == reqID {
+			accent = style.CorrelAccent.Render("│ ")
+		}
+		rowW := width - accentW
+		if rowW < 1 {
+			rowW = 1
+		}
+		row := accent + formatRow(ev, rowW)
 		if i == cursor {
 			row = style.Selected.Width(width).Render(row)
 		}

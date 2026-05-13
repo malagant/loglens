@@ -155,9 +155,10 @@ func TestHelpOverlayOpensAndCloses(t *testing.T) {
 	s.waitFor(t, "Basic", 3*time.Second)
 	s.waitFor(t, "Power user", 3*time.Second)
 
-	// Dismiss with ? again and confirm the footer keymap returns.
+	// Dismiss with ? again; wait for a string that only appears when the
+	// overlay is gone (the stream pane border title, not the help overlay).
 	s.send(t, "?")
-	s.waitFor(t, "quit", 3*time.Second)
+	s.waitFor(t, "Stream", 3*time.Second)
 
 	s.send(t, "q")
 	s.waitExit(t, 5*time.Second)

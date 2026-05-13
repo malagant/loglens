@@ -120,6 +120,22 @@ func (h *helpModel) styledBody() []string {
 		))
 	}
 	lines = append(lines, "")
+	lines = append(lines, style.Title.Render("Detail pane"))
+	for _, item := range []struct{ key, desc string }{
+		{"enter", "open detail · inspect selected row"},
+		{"tab", "focus detail pane"},
+		{"l / right", "expand node"},
+		{"h / left", "collapse node"},
+		{"j / k", "navigate tree"},
+		{"y", "copy raw line to clipboard (OSC 52)"},
+		{"esc", "close detail pane"},
+	} {
+		lines = append(lines, fmt.Sprintf("  %s  %s",
+			style.KeyHint.Render(item.key),
+			style.KeyDesc.Render(item.desc),
+		))
+	}
+	lines = append(lines, "")
 	lines = append(lines, style.Dim.Render("Press ? or esc to close."))
 	return lines
 }

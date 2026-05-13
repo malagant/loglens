@@ -53,7 +53,8 @@ var (
 
 	Timestamp = lipgloss.NewStyle().Foreground(Faint)
 	Source    = lipgloss.NewStyle().Foreground(Primary)
-	Selected  = lipgloss.NewStyle().Background(lipgloss.Color("#2D2A2E")).Foreground(Text)
+	Selected     = lipgloss.NewStyle().Background(lipgloss.Color("#2D2A2E")).Foreground(Text)
+	CorrelAccent = lipgloss.NewStyle().Foreground(lipgloss.Color("#FD971F"))
 )
 
 // LevelColor maps a normalized log level string (see internal/event.Level) to

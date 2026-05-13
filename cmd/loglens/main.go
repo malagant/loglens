@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -23,13 +24,20 @@ import (
 // full in-process time from argv handling to Bubble Tea handoff.
 var tBoot = time.Now()
 
+// sourceList collects repeated --source flags into an ordered list. Each
+// entry is one source URI (see scheme list in `loglens --help`).
+type sourceList []string
+
+func (s *sourceList) String() string     { return strings.Join(*s, ",") }
+func (s *sourceList) Set(v string) error { *s = append(*s, v); return nil }
+
 func main() {
 	versionFlag := flag.Bool("version", false, "print version and exit")
-	// --source is intentionally undocumented in --help; it is a developer
-	// escape hatch for verifying the source pipeline end-to-end while the UI
-	// is still scaffolding. Real source selection lands when the views ship.
-	var sourceURI string
-	flag.StringVar(&sourceURI, "source", "", "")
+
+	var sources sourceList
+	flag.Var(&sources, "source",
+		"source URI to tail; repeatable. Schemes: file://PATH, k8s://[ctx/]ns/<pod|selector>")
+
 	var correlateKeys string
 	flag.StringVar(&correlateKeys, "correlate", "",
 		"comma-separated JSON keys to use for request-id correlation "+
@@ -46,11 +54,15 @@ func main() {
 		return
 	}
 
-	if sourceURI != "" {
+	// LOGLENS_DUMP=1 is the SPA-13 source-pipeline smoke path: connect every
+	// --source to the merger and stream raw lines to stdout. Keeps the
+	// pre-TUI surface accessible from `time loglens --source ...` benches
+	// without leaving footprints in the user-facing CLI.
+	if os.Getenv("LOGLENS_DUMP") == "1" && len(sources) > 0 {
 		if profile {
 			bootLog("source-dump-ready", time.Since(tBoot))
 		}
-		runSourceDump(sourceURI)
+		runSourceDump(sources)
 		return
 	}
 
@@ -62,13 +74,57 @@ func main() {
 	if os.Getenv("LOGLENS_PROFILE_EXIT") == "1" {
 		return
 	}
+
 	tuiModel := tui.New()
 	if correlateKeys != "" {
 		tuiModel = tuiModel.WithDetector(correlate.Parse(correlateKeys))
 	}
+
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
+
+	// Open every source up-front so any misconfiguration surfaces as a
+	// terminal error instead of silently disappearing into the TUI's empty
+	// state.
+	var opened []source.Source
+	for _, uri := range sources {
+		src, err := source.Open(uri)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "loglens: %s: %v\n", uri, err)
+			for _, prev := range opened {
+				_ = prev.Close()
+			}
+			os.Exit(2)
+		}
+		opened = append(opened, src)
+	}
+
+	var merger *pipeline.Merger
+	if len(opened) > 0 {
+		merger = pipeline.New(4096)
+		for _, src := range opened {
+			merger.Add(ctx, src.Stream(ctx))
+		}
+	}
+
 	p := tea.NewProgram(tuiModel, tea.WithAltScreen())
-	if _, err := p.Run(); err != nil {
-		fmt.Fprintln(os.Stderr, "loglens:", err)
+
+	if merger != nil {
+		go tui.PumpEvents(ctx, p, merger.Events())
+	}
+
+	_, runErr := p.Run()
+
+	cancel()
+	if merger != nil {
+		merger.Close()
+	}
+	for _, src := range opened {
+		_ = src.Close()
+	}
+
+	if runErr != nil {
+		fmt.Fprintln(os.Stderr, "loglens:", runErr)
 		os.Exit(1)
 	}
 }
@@ -83,23 +139,34 @@ func bootLog(stage string, elapsed time.Duration) {
 		stage, float64(elapsed.Microseconds())/1000.0)
 }
 
-// runSourceDump connects a single source to the merger and writes each event's
-// raw line to stdout. It exits when the user sends SIGINT or the source closes.
-// This is the smallest viable smoke test for the SPA-13 pipeline.
-func runSourceDump(uri string) {
-	src, err := source.Open(uri)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "loglens:", err)
-		os.Exit(2)
-	}
-	defer src.Close()
-
+// runSourceDump connects every source to the merger and writes each event's
+// raw line to stdout. It exits when the user sends SIGINT or every source
+// closes. Used by the SPA-13 pipeline smoke (`LOGLENS_DUMP=1 loglens ...`).
+func runSourceDump(uris []string) {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
 	m := pipeline.New(4096)
 	defer m.Close()
-	m.Add(ctx, src.Stream(ctx))
+
+	var opened []source.Source
+	for _, uri := range uris {
+		src, err := source.Open(uri)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "loglens: %s: %v\n", uri, err)
+			for _, prev := range opened {
+				_ = prev.Close()
+			}
+			os.Exit(2)
+		}
+		opened = append(opened, src)
+		m.Add(ctx, src.Stream(ctx))
+	}
+	defer func() {
+		for _, src := range opened {
+			_ = src.Close()
+		}
+	}()
 
 	for {
 		select {
