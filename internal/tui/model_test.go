@@ -12,12 +12,39 @@ import (
 
 func TestViewContainsBranding(t *testing.T) {
 	m := New()
+	// Pre-WindowSizeMsg: placeholder must have branding + quit hint.
 	out := m.View()
 	if !strings.Contains(out, "LogLens") {
-		t.Fatalf("expected branding in view, got: %q", out)
+		t.Fatalf("expected branding in placeholder view, got: %q", out)
 	}
 	if !strings.Contains(out, "q to quit") {
-		t.Fatalf("expected quit hint, got: %q", out)
+		t.Fatalf("expected quit hint in placeholder view, got: %q", out)
+	}
+	// Post-WindowSizeMsg: multi-pane shell must have branding + quit binding.
+	sized, _ := m.Update(tea.WindowSizeMsg{Width: 120, Height: 30})
+	rendered := sized.View()
+	if !strings.Contains(rendered, "LogLens") {
+		t.Fatalf("expected branding in multi-pane view, got: %q", rendered)
+	}
+	if !strings.Contains(stripANSI(rendered), "quit") {
+		t.Fatalf("expected quit binding in footer, got: %q", rendered)
+	}
+}
+
+func TestEventBatch(t *testing.T) {
+	now := time.Date(2026, 5, 13, 12, 0, 0, 0, time.UTC)
+	m := New()
+	batch := EventBatch{
+		{Timestamp: now, Source: "file:///a.log", Raw: "line 1", Level: event.LevelInfo},
+		{Timestamp: now, Source: "file:///a.log", Raw: "line 2", Level: event.LevelError},
+	}
+	next, _ := m.Update(batch)
+	got := next.(Model)
+	if want := 2; len(got.events) != want {
+		t.Fatalf("EventBatch: want %d events, got %d", want, len(got.events))
+	}
+	if got.VisibleRows()[1].Raw != "line 2" {
+		t.Fatalf("second event mismatch: %+v", got.VisibleRows())
 	}
 }
 
