@@ -26,6 +26,35 @@ go install github.com/loglens/loglens/cmd/loglens@latest
 
 A real recording lands with the first feature-complete alpha. See `docs/` for the placeholder file.
 
+## Quickstart
+
+LogLens reads from one or more **source URIs**. Schemes available in v0.1:
+
+| Scheme  | Form                                          | Notes                                                                              |
+| ------- | --------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `file://` | `file:///var/log/app.log` or bare path      | Tails a single file with `tail -F` rotation/truncation semantics.                  |
+| `k8s://`  | `k8s://[<context>/]<namespace>/<pod-or-selector>` | Shells out to `kubectl logs -f --timestamps --all-containers --prefix`. Requires `kubectl` on `PATH` and a configured kubeconfig. |
+
+### Kubernetes examples
+
+```sh
+# Tail a single pod in the current kubeconfig context
+loglens --source k8s://default/api-7d8c9b6f4-x2k9z
+
+# Tail every pod matching a label selector — new pods are picked up mid-stream
+loglens --source k8s://default/app=api
+
+# Pin a non-default context
+loglens --source k8s://prod-eu/payments/checkout-worker
+```
+
+The `kubectl` dependency is intentional for v0.1.0: it inherits whatever
+authentication you already have working (oidc plugins, aws-iam-authenticator,
+gke-gcloud-auth-plugin, etc.) without bundling them. A native client-go
+implementation is on the v0.2 roadmap. Errors from `kubectl` (missing
+binary, bad kubeconfig, pod not found, transient API blips) surface as inline
+`level=error` events rather than crashing the TUI.
+
 ## Why
 
 `stern` is Kubernetes-only. CloudWatch only opens in a browser. Datadog costs $200/host. `lnav` is brilliant but file-only. Every DevOps engineer ends up juggling four log tools a day. LogLens is the unifier — one keymap, one filter language, every source you own.

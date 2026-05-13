@@ -14,6 +14,7 @@ import (
 	"github.com/loglens/loglens/internal/pipeline"
 	"github.com/loglens/loglens/internal/source"
 	_ "github.com/loglens/loglens/internal/source/file" // register file:// scheme
+	_ "github.com/loglens/loglens/internal/source/k8s"  // register k8s:// scheme
 	"github.com/loglens/loglens/internal/tui"
 )
 
