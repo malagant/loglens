@@ -52,6 +52,11 @@ changelog:
       - "Merge branch"
 
 signs:
+  # Keyless cosign signing via Sigstore/Fulcio + GitHub Actions OIDC.
+  # No private key or password is stored anywhere; the signing certificate
+  # is short-lived (~10m) and tied to the workflow run. The resulting
+  # .sig + .pem (and Rekor transparency log entry) are sufficient for
+  # `cosign verify-blob` against the workflow identity.
   - id: cosign-checksums
     cmd: cosign
     artifacts: checksum
@@ -59,13 +64,10 @@ signs:
     certificate: "${artifact}.pem"
     args:
       - sign-blob
-      - "--key=env://COSIGN_PRIVATE_KEY"
       - "--output-signature=${signature}"
       - "--output-certificate=${certificate}"
       - "${artifact}"
       - "--yes"
-    env:
-      - COSIGN_PASSWORD={{ .Env.COSIGN_PASSWORD }}
 
 brews:
   - name: loglens

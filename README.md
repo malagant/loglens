@@ -30,6 +30,29 @@ A real recording lands with the first feature-complete alpha. See `docs/` for th
 
 `stern` is Kubernetes-only. CloudWatch only opens in a browser. Datadog costs $200/host. `lnav` is brilliant but file-only. Every DevOps engineer ends up juggling four log tools a day. LogLens is the unifier — one keymap, one filter language, every source you own.
 
+## Verifying release artifacts
+
+Releases are signed with [Sigstore](https://www.sigstore.dev/) **keyless cosign**: the signing identity is the GitHub Actions workflow itself, not a long-lived keypair. To verify the checksums file for a release:
+
+```sh
+VERSION=v0.0.2-alpha
+BASE="https://github.com/malagant/loglens/releases/download/${VERSION}"
+curl -sLO "${BASE}/loglens_${VERSION#v}_checksums.txt"
+curl -sLO "${BASE}/loglens_${VERSION#v}_checksums.txt.sig"
+curl -sLO "${BASE}/loglens_${VERSION#v}_checksums.txt.pem"
+
+cosign verify-blob \
+  --certificate "loglens_${VERSION#v}_checksums.txt.pem" \
+  --signature   "loglens_${VERSION#v}_checksums.txt.sig" \
+  --certificate-identity-regexp "https://github.com/malagant/loglens/.github/workflows/release.yml@.*" \
+  --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+  "loglens_${VERSION#v}_checksums.txt"
+
+sha256sum -c "loglens_${VERSION#v}_checksums.txt" --ignore-missing
+```
+
+A successful verify proves the checksums file was signed by our exact release workflow and was logged in the public [Rekor](https://docs.sigstore.dev/logging/overview/) transparency log.
+
 ## Contributing
 
 We build in the open and welcome PRs. Start with [CONTRIBUTING.md](CONTRIBUTING.md). Good first issues are labeled [`good-first-issue`](https://github.com/loglens/loglens/issues?q=label%3Agood-first-issue).
