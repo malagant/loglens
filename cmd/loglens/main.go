@@ -10,6 +10,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/loglens/loglens/internal/correlate"
 	"github.com/loglens/loglens/internal/pipeline"
 	"github.com/loglens/loglens/internal/source"
 	_ "github.com/loglens/loglens/internal/source/file" // register file:// scheme
@@ -23,11 +24,19 @@ func main() {
 	// is still scaffolding. Real source selection lands when the views ship.
 	var sourceURI string
 	flag.StringVar(&sourceURI, "source", "", "")
+	var correlateKeys string
+	flag.StringVar(&correlateKeys, "correlate", "",
+		"comma-separated JSON keys to use for request-id correlation "+
+			"(default: request_id,trace_id,x-request-id,requestId)")
 	flag.Parse()
 
 	if *versionFlag {
 		fmt.Println(tui.Version)
 		return
+	}
+
+	if correlateKeys != "" {
+		tui.SetDetector(correlate.Parse(correlateKeys))
 	}
 
 	if sourceURI != "" {
