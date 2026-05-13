@@ -82,7 +82,7 @@ brews:
       bin.install "loglens"
     test: |
       assert_match version.to_s, shell_output("#{bin}/loglens --version")
-    skip_upload: auto
+    skip_upload: true
 
 scoops:
   - repository:
@@ -92,7 +92,7 @@ scoops:
     homepage: "https://github.com/loglens/loglens"
     description: "One TUI, every log source, one query language."
     license: MIT
-    skip_upload: auto
+    skip_upload: true
 
 release:
   draft: false
