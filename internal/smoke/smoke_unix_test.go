@@ -82,6 +82,16 @@ func (s *ptySession) output() string {
 	return s.buf.String()
 }
 
+// resetOutput discards everything captured so far. Use it as a sync point
+// between phases of a test so that subsequent waitFor calls only see output
+// produced in response to the next interaction (not stale text that was
+// already on screen).
+func (s *ptySession) resetOutput() {
+	s.mu.Lock()
+	s.buf.Reset()
+	s.mu.Unlock()
+}
+
 func (s *ptySession) waitFor(t *testing.T, needle string, timeout time.Duration) {
 	t.Helper()
 	deadline := time.Now().Add(timeout)
@@ -92,6 +102,24 @@ func (s *ptySession) waitFor(t *testing.T, needle string, timeout time.Duration)
 		time.Sleep(50 * time.Millisecond)
 	}
 	t.Fatalf("timed out waiting for %q in output:\n%s", needle, s.output())
+}
+
+// waitForAbsent waits until `needle` is NOT present in the most recently
+// captured output window. After every poll it resets the buffer so that the
+// next iteration only sees freshly-rendered frames. This is the right tool
+// to verify an overlay has been dismissed (e.g. after `?` closes help, we
+// want to confirm "Basic" no longer appears in subsequent redraws).
+func (s *ptySession) waitForAbsent(t *testing.T, needle string, timeout time.Duration) {
+	t.Helper()
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		s.resetOutput()
+		time.Sleep(75 * time.Millisecond)
+		if !strings.Contains(s.output(), needle) {
+			return
+		}
+	}
+	t.Fatalf("timed out waiting for %q to disappear from output:\n%s", needle, s.output())
 }
 
 func (s *ptySession) send(t *testing.T, keys string) {
@@ -155,10 +183,12 @@ func TestHelpOverlayOpensAndCloses(t *testing.T) {
 	s.waitFor(t, "Basic", 3*time.Second)
 	s.waitFor(t, "Power user", 3*time.Second)
 
-	// Dismiss with ? again; wait for a string that only appears when the
-	// overlay is gone (the stream pane border title, not the help overlay).
+	// Dismiss with ? again. Verify the overlay is actually gone by waiting
+	// for the "Power user" section header to stop appearing in fresh frames
+	// — substring matching on the cumulative buffer (waitFor "Stream") would
+	// false-pass because "Stream" was rendered during the initial layout.
 	s.send(t, "?")
-	s.waitFor(t, "Stream", 3*time.Second)
+	s.waitForAbsent(t, "Power user", 3*time.Second)
 
 	s.send(t, "q")
 	s.waitExit(t, 5*time.Second)

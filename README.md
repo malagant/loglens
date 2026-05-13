@@ -4,29 +4,62 @@ One TUI, every log source, one query language.
 
 LogLens is a fast, local-only terminal UI for tailing and searching logs across Kubernetes, local files, journald, and Docker — with a single filter DSL, JSON drill-down, and request-id correlation. No phone-home, no backend, just your terminal.
 
-> Status: pre-alpha. The first tagged release is `v0.0.1-alpha` and is a scaffold only. See the roadmap in [SPA-6](https://example.invalid/SPA/issues/SPA-6).
+> Status: `v0.1.0` is the first tagged release suitable for daily use on
+> local files and Kubernetes pods. See the roadmap in
+> [SPA-6](https://github.com/malagant/loglens/issues) and CHANGELOG.md.
+
+## Demo
+
+![LogLens demo — tail a file, filter for errors, drill into a request](docs/demo.gif)
+
+GIF too heavy? The plaintext fallback is [`docs/demo.cast`](docs/demo.cast)
+(`asciinema play docs/demo.cast`). The source-of-truth scripts that produce
+both — [`docs/demo.tape`](docs/demo.tape) for the GIF, [`docs/cast.sh`](docs/cast.sh)
+for the cast — live in the repo and re-render via `make demo`.
 
 ## Install
 
 ```sh
-# macOS / Linux (Homebrew tap, once published)
+# macOS / Linux (Homebrew tap)
 brew install loglens/tap/loglens
 
-# Windows (Scoop bucket, once published)
+# Windows (Scoop bucket)
 scoop bucket add loglens https://github.com/loglens/scoop-bucket
 scoop install loglens
 
-# Anywhere with Go 1.23+
+# Any platform with Go 1.23+
 go install github.com/loglens/loglens/cmd/loglens@latest
+
+# Verify
+loglens --version
 ```
 
-## Demo
-
-![asciinema demo placeholder](docs/demo.gif)
-
-A real recording lands with the first feature-complete alpha. See `docs/` for the placeholder file.
+Pre-built archives for `linux`, `darwin`, `windows` × `amd64`, `arm64` are
+attached to every GitHub Release together with a SHA-256 checksums file and a
+keyless cosign signature (see [Verifying release artifacts](#verifying-release-artifacts)).
 
 ## Quickstart
+
+LogLens reads from one or more `--source` URIs and merges them into a single
+scroll-back. Three steps to get from install to live tail:
+
+```sh
+# 1. Tail a local file (try the bundled sample first)
+loglens --source file://docs/sample.log
+
+# 2. Open the filter prompt with `/`, then type a predicate and press Enter:
+#       level=error
+#    The stream narrows live as you type. Esc clears, q quits.
+
+# 3. Swap to a Kubernetes pod (requires kubectl on PATH)
+loglens --source k8s://default/api-7d8c9b6f4-x2k9z
+```
+
+Press `?` at any time for the full keymap. The interactive flow is in
+[`docs/demo.gif`](docs/demo.gif); the keystrokes that produced it live in
+[`docs/demo.tape`](docs/demo.tape).
+
+### Source URIs
 
 LogLens reads from one or more **source URIs**. Schemes available in v0.1:
 
@@ -34,6 +67,15 @@ LogLens reads from one or more **source URIs**. Schemes available in v0.1:
 | ------- | --------------------------------------------- | ---------------------------------------------------------------------------------- |
 | `file://` | `file:///var/log/app.log` or bare path      | Tails a single file with `tail -F` rotation/truncation semantics.                  |
 | `k8s://`  | `k8s://[<context>/]<namespace>/<pod-or-selector>` | Shells out to `kubectl logs -f --timestamps --all-containers --prefix`. Requires `kubectl` on `PATH` and a configured kubeconfig. |
+
+Pass `--source` multiple times to merge several streams:
+
+```sh
+loglens \
+  --source file:///var/log/app.log \
+  --source k8s://default/api-7d8c9b6f4-x2k9z \
+  --source k8s://default/app=api
+```
 
 ### Kubernetes examples
 
@@ -118,7 +160,7 @@ go test -run '^$' -bench BenchmarkMatcherCompound -benchtime 1s ./bench/
 Releases are signed with [Sigstore](https://www.sigstore.dev/) **keyless cosign**: the signing identity is the GitHub Actions workflow itself, not a long-lived keypair. To verify the checksums file for a release:
 
 ```sh
-VERSION=v0.0.2-alpha
+VERSION=v0.1.0
 BASE="https://github.com/malagant/loglens/releases/download/${VERSION}"
 curl -sLO "${BASE}/loglens_${VERSION#v}_checksums.txt"
 curl -sLO "${BASE}/loglens_${VERSION#v}_checksums.txt.sig"
