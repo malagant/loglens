@@ -96,5 +96,5 @@ release:
   draft: false
   prerelease: auto
   github:
-    owner: loglens
+    owner: malagant
     name: loglens
