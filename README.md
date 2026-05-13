@@ -21,11 +21,14 @@ for the cast — live in the repo and re-render via `make demo`.
 
 ```sh
 # macOS / Linux (Homebrew tap)
-brew install loglens/tap/loglens
+brew install malagant/tap/loglens
 
 # Windows (Scoop bucket)
-scoop bucket add loglens https://github.com/loglens/scoop-bucket
+scoop bucket add malagant https://github.com/malagant/scoop-bucket
 scoop install loglens
+
+# Container (Linux amd64 / arm64, distroless)
+docker run --rm -it ghcr.io/malagant/loglens:latest --help
 
 # Any platform with Go 1.23+
 go install github.com/loglens/loglens/cmd/loglens@latest
@@ -178,9 +181,29 @@ sha256sum -c "loglens_${VERSION#v}_checksums.txt" --ignore-missing
 
 A successful verify proves the checksums file was signed by our exact release workflow and was logged in the public [Rekor](https://docs.sigstore.dev/logging/overview/) transparency log.
 
+## Known limitations (v0.1)
+
+LogLens v0.1 is honest about its scope. Filed as pinned issues on the tracker:
+
+- **`kubectl` shell-out, not native `client-go`.** Inherits your existing kube auth, but adds a process per source. Native `client-go` is on the v0.2 roadmap.
+- **No journald, Docker, or CloudWatch sources yet.** Only `file://` and `k8s://` ship in v0.1. The source interface is pluggable — see [`internal/source`](internal/source) for the contract.
+- **Filter DSL is intentionally small.** No booleans, regex literals, time-window predicates, or aggregations until v0.2. The grammar table above is the complete language.
+- **No persistent buffer or search-back.** The ring buffer is in-memory; restart loses scroll-back. v0.2 will add an optional on-disk session log.
+- **No mouse support.** Keyboard-driven by design. Mouse selection works in your terminal (OSC 52 copy is supported).
+
+If something on this list blocks you, comment on the corresponding pinned issue — usage signal will reorder the roadmap.
+
+## Community & feedback
+
+- **GitHub Discussions** — [github.com/malagant/loglens/discussions](https://github.com/malagant/loglens/discussions) for questions, ideas, and source/scheme requests.
+- **GitHub Issues** — [github.com/malagant/loglens/issues](https://github.com/malagant/loglens/issues) for bugs and concrete feature requests.
+- **Discord** — coming soon; an invite link will be posted here and pinned in Discussions once the server is up.
+
+No telemetry, no phone-home, no analytics. The only feedback channel is you talking to us in the open.
+
 ## Contributing
 
-We build in the open and welcome PRs. Start with [CONTRIBUTING.md](CONTRIBUTING.md). Good first issues are labeled [`good-first-issue`](https://github.com/loglens/loglens/issues?q=label%3Agood-first-issue).
+We build in the open and welcome PRs. Start with [CONTRIBUTING.md](CONTRIBUTING.md) — it covers the build/test/lint loop, the release process, and the commit-message style. Good first issues are labeled [`good-first-issue`](https://github.com/malagant/loglens/issues?q=label%3Agood-first-issue).
 
 ## License
 

@@ -69,30 +69,72 @@ signs:
       - "${artifact}"
       - "--yes"
 
+dockers:
+  - id: loglens-amd64
+    goos: linux
+    goarch: amd64
+    image_templates:
+      - "ghcr.io/malagant/loglens:{{ .Version }}-amd64"
+      - "ghcr.io/malagant/loglens:latest-amd64"
+    dockerfile: Dockerfile
+    use: buildx
+    build_flag_templates:
+      - "--platform=linux/amd64"
+      - "--label=org.opencontainers.image.title=loglens"
+      - "--label=org.opencontainers.image.description=One TUI, every log source, one query language."
+      - "--label=org.opencontainers.image.source=https://github.com/malagant/loglens"
+      - "--label=org.opencontainers.image.version={{ .Version }}"
+      - "--label=org.opencontainers.image.revision={{ .FullCommit }}"
+      - "--label=org.opencontainers.image.licenses=MIT"
+  - id: loglens-arm64
+    goos: linux
+    goarch: arm64
+    image_templates:
+      - "ghcr.io/malagant/loglens:{{ .Version }}-arm64"
+      - "ghcr.io/malagant/loglens:latest-arm64"
+    dockerfile: Dockerfile
+    use: buildx
+    build_flag_templates:
+      - "--platform=linux/arm64"
+      - "--label=org.opencontainers.image.title=loglens"
+      - "--label=org.opencontainers.image.description=One TUI, every log source, one query language."
+      - "--label=org.opencontainers.image.source=https://github.com/malagant/loglens"
+      - "--label=org.opencontainers.image.version={{ .Version }}"
+      - "--label=org.opencontainers.image.revision={{ .FullCommit }}"
+      - "--label=org.opencontainers.image.licenses=MIT"
+
+docker_manifests:
+  - name_template: "ghcr.io/malagant/loglens:{{ .Version }}"
+    image_templates:
+      - "ghcr.io/malagant/loglens:{{ .Version }}-amd64"
+      - "ghcr.io/malagant/loglens:{{ .Version }}-arm64"
+  - name_template: "ghcr.io/malagant/loglens:latest"
+    image_templates:
+      - "ghcr.io/malagant/loglens:latest-amd64"
+      - "ghcr.io/malagant/loglens:latest-arm64"
+
 brews:
   - name: loglens
     repository:
-      owner: loglens
+      owner: malagant
       name: homebrew-tap
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
-    homepage: "https://github.com/loglens/loglens"
+    homepage: "https://github.com/malagant/loglens"
     description: "One TUI, every log source, one query language."
     license: MIT
     install: |
       bin.install "loglens"
     test: |
       assert_match version.to_s, shell_output("#{bin}/loglens --version")
-    skip_upload: true
 
 scoops:
   - repository:
-      owner: loglens
+      owner: malagant
       name: scoop-bucket
       token: "{{ .Env.SCOOP_BUCKET_GITHUB_TOKEN }}"
-    homepage: "https://github.com/loglens/loglens"
+    homepage: "https://github.com/malagant/loglens"
     description: "One TUI, every log source, one query language."
     license: MIT
-    skip_upload: true
 
 release:
   draft: false
