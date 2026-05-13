@@ -43,6 +43,20 @@ jobs:
           cache: true
       - run: go test ./...
 
+  bench:
+    name: bench / regression guard
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: run benchmarks
+        run: go test -run '^$' -bench . -benchmem -benchtime 1s ./bench/
+      - name: matcher regression guard
+        run: go test -run TestMatcherRegressionGuard -v ./bench/
+
   build:
     name: build (${{ matrix.goos }}/${{ matrix.goarch }})
     runs-on: ubuntu-latest

@@ -1,0 +1,6 @@
+{
+  "notes": "Per-platform baselines for BenchmarkMatcherCompound (ops/sec). Measured on Apple M5 (darwin/arm64). To recapture: `go test -bench BenchmarkMatcherCompound -benchtime 1s ./bench/` then ops_per_sec = 1e9 / ns_per_op. Set the baseline ~30% below your median to absorb normal CI noise. Platforms without an entry cause TestMatcherRegressionGuard to skip.",
+  "matcherCompoundOpsPerSec": {
+    "darwin/arm64": 60000000
+  }
+}

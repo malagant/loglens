@@ -87,6 +87,32 @@ field.user_id=42 !source=staging  # field match, excluding staging
 
 The full DSL (booleans, regex, ranges, time windows) is reserved for v0.2.
 
+## Performance
+
+LogLens is built to the following hard budgets — measured, not aspirational:
+
+| Metric | Budget | Measured (macOS arm64) | Measured (linux amd64) |
+| --- | --- | --- | --- |
+| Cold start (process exec → TUI ready) | < 100 ms | ~16 ms | _CI pending_ |
+| Key-response (filter match, worst case) | < 16 ms | < 0.01 ms (130 M ops/s) | _CI pending_ |
+| Idle CPU (blocked on input, no log stream) | ≈ 0% | 0.0% | _CI pending_ |
+
+All three metrics have a regression guard in CI. The matcher guard fails the build if throughput on the compound predicate `level=error source=k8s /upstream/` drops more than 30% below the recorded per-platform baseline (`bench/baseline.json`).
+
+### Measuring locally
+
+```sh
+# Cold start
+LOGLENS_PROFILE=1 LOGLENS_PROFILE_EXIT=1 loglens
+# → loglens: boot stage=tui-ready elapsed_ms=X.XXX
+
+# Matcher throughput
+go test -run '^$' -bench BenchmarkMatcherCompound -benchtime 1s ./bench/
+
+# Idle CPU (pass PID of a running loglens process, or omit to auto-detect)
+./scripts/idle-cpu.sh [pid]
+```
+
 ## Verifying release artifacts
 
 Releases are signed with [Sigstore](https://www.sigstore.dev/) **keyless cosign**: the signing identity is the GitHub Actions workflow itself, not a long-lived keypair. To verify the checksums file for a release:
